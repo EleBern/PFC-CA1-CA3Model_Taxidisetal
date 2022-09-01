@@ -3,6 +3,7 @@ Cortical-CA3-CA1 network model by [Taxidis et al]
 
 ## Introduction
 During an Erasmus internship on which I based my Master thesis, I developed this model to fit the experimental data obtained by the University of Genoa. 
+I have studied the behaviour of the prefrontal cortex and the hippocampal models separately before connecting them. Here is the code for the complete model.
 
 ### File structure
 - `PFC-HPC.py` is the main file.
