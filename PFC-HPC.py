@@ -18,7 +18,7 @@ rec_clock = 1*ms            # monitors recording timestep
 print_clock = 1*second      # printing-seconds clock
 to_print = 0*second
 start_time = time.time()    # start recording real time
-t_final = 0.1*second          # simulation duration
+t_final = 60*second          # simulation duration
 #-------------------------------------------------------------------------------
 
 # GROUPS------------------------------------------------------------------------
