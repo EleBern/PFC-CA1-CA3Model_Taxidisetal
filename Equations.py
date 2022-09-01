@@ -2,9 +2,10 @@ from brian2 import *
 from Parameters import *
 
 # PFC PYRAMIDAL CELL Equations--------------------------------------------------
+# Changed exponentials with exprel for better accuracy when near division for 0
 eqs_PYc = '''
     dVs/dt = (-( I_L + I_Na + I_K + I_A + I_KS + I_KNa ) - I_sd/As -I_GABA_IP + Is) / C_c /ms  : 1 
-    dVd/dt = (-( I_NaP + I_AR + I_Ca + I_KCa ) + I_sd/Ad -I_AMPA_PP - I_C_HP_PP + Id) / C_c /ms: 1
+    dVd/dt = (-( I_NaP + I_AR + I_Ca + I_KCa ) + I_sd/Ad -I_AMPA_PP + Id) / C_c /ms            : 1
     
     # dVs/dt = (-( I_L + I_Na + I_K + I_A + I_KS + I_KNa ) - I_sd/As + Is) / C_c /ms           : 1 
     # dVd/dt = (-( I_NaP + I_AR + I_Ca + I_KCa ) + I_sd/Ad + Id) / C_c /ms       : 1
@@ -78,79 +79,44 @@ eqs_PYc = '''
     Is                                                                           : 1
     I_AMPA_PP                                                                    : 1
     I_GABA_IP                                                                    : 1
-    I_C_HP_PP                                                                    : 1
 '''
 #-------------------------------------------------------------------------------
 
-# HPC PYRAMIDAL CELL Equations--------------------------------------------------
-eqs_PYh = '''
-    dVs/dt = (-( I_Ls + I_Na + I_K ) - I_sd/p - I_GABA_IP/p + Is/p)/C_h /ms      : 1
-    dVd/dt = (-( I_Ld + I_Ca + I_KAHP + I_KCa ) + I_sd/(1.-p) - I_AMPA_PP/(1.-p) - I_C_HP_PP/(1.-p) + Id/(1.-p))/C_h /ms : 1
-    dCa/dt = (-0.13*I_Ca - 0.075*Ca) /ms                                         : 1
+# INTERNEURON Equations COMPTE--------------------------------------------------
+# eqs_IN = '''
+#     dVi/dt = ((-( I_Li + I_Nai + I_Ki ) + Ii - I_GABA_II - I_AMPA_PI) / Ci) /ms  : 1
     
-#SOMATIC currents    
-# Leakage Current    
-    I_Ls = gL*(Vs-VL)                                                            : 1
+# #SOMATIC currents    
+# # Sodium Current  
+#     mi = alphami / (alphami + betami)                                            : 1
+#     dhi/dt = phi* (alphahi*(1.-hi)-betahi*hi) /ms                                : 1
+#     alphami = 0.1*(Vi+33.) / (1.-exp(-(Vi+33.)/10.))                             : 1
+#     betami = 4.*exp(-(Vi+53.7)/12.)                                              : 1
+#     alphahi = 0.07*exp(-(Vi+50.)/10.)                                            : 1
+#     betahi = 1./(1.+exp(-(Vi+20.)/10.))                                          : 1
+#     I_Nai = gNa_c*(mi**3)*hi*(Vi-VNa_c)                                          : 1
 
-# Sodium Current  
-    m_inf = alpham / (alpham + betam)                                            : 1
-    dh/dt = (alphah - h*(alphah + betah)) /ms                                    : 1
-    alpham = 0.32*4. / exprel((-46.9-Vs)/4.)                                     : 1
-    betam = 0.28*5. / (exprel((Vs+19.9)/5.))                                     : 1 
-    alphah = 0.128*exp((-43-Vs)/18.)                                             : 1
-    betah = 4./(1+exp((-20-Vs)/5.))                                              : 1   
-    I_Na = gNa_h*(m_inf**2)*h*(Vs-VNa_h)                                         : 1
-
-# Potassium Current   
-    dn/dt = (alphan - n*(alphan + betan)) /ms                                    : 1
-    alphan = 0.016*5. / (exprel((-24.9-Vs)/5.))                                  : 1
-    betan = 0.25*exp(-1-0.025*Vs)                                                : 1
-    I_K = gK_h*n*(Vs-VK_h)                                                       : 1
+# # Potassium Current   
+#     dni/dt = phi* (alphani*(1.-ni)-betani*ni) /ms                                : 1
+#     alphani = 0.01*(Vi+34.) / (1.-exp(-(Vi+34.)/10.))                            : 1
+#     betani = 0.125*exp(-(Vi+44.)/25.)                                            : 1
+#     I_Ki = gK_c*(ni**4)*(Vi-VK_c)                                                : 1
     
-  
-#DENDRITIC Currents
-# Leakage Current
-    I_Ld = gL*(Vd-VL)                                                            : 1
-    
-# Ca+ Current
-    ds/dt = (alphas - s*(alphas + betas)) /ms                                    : 1
-    alphas = 1.6 / (exp(-0.072*(Vd-5))+1.)                                       : 1
-    betas = 0.02*5. / (exprel((Vd+8.9)/5.))                                      : 1
-    I_Ca = gCa_h*(s**2)*(Vd-VCa_h)                                               : 1
+# # Leakage Current    
+#     I_Li = gL*(Vi-VL)                                                            : 1
 
-# AHP K+ Current   
-    dq/dt = (alphaq - q*(alphaq + 0.001)) /ms                                    : 1
-    alphaq = (int(0.00002*Ca<=0.01)*0.00002*Ca + int(0.00002*Ca>0.01)*0.01)      : 1
-    I_KAHP = gKAHP_h*q*(Vd-VK_h)                                                 : 1
-    
-# Ca+-dependent K+ Current    
-    dc/dt = (alphac - c*(alphac + betac)) /ms                                    : 1
-    alphac = int(Vd <= -10.)*(exp((Vd+50)/11.) - exp((Vd+53.5)/27.)) /18.975\
-              + int(Vd > -10.)*2.*exp((-53.5-Vd)/27.)                            : 1
-    betac = int(Vd <= -10.)*(2.*exp((-53.5-Vd)/27.)-alphac)                      : 1
-    I_KCa = gKCa_h*c*(int(Ca/250.<=1.))*(Vd-VK_h)*Ca/250. \
-              + (int(Ca/250.>1.))*gKCa_h*c*(Vd-VK_h)                             : 1
+# #VARYING Network Parameters 
+#     VL                                                                           : 1
+#     gL                                                                           : 1
+#     Ii                                                                           : 1
+# '''
 
- 
-# Dendro-Somatic Current    
-    I_sd = gsd*(Vs-Vd)                                                           : 1
-    
-# Intrinsic Parameters
-    gCa_h                                                                        : 1
-    VL                                                                           : 1
-    gL                                                                           : 1
-    gsd                                                                          : 1
-    Is                                                                           : 1
-    Id                                                                           : 1
-    I_AMPA_PP                                                                    : 1
-    I_GABA_IP                                                                    : 1
-    I_C_HP_PP                                                                    : 1
-'''
-#-------------------------------------------------------------------------------
 
-# INTERNEURON Equations---------------------------------------------------------
+# INTERNEURON Equations TAXIDIS-------------------------------------------------
+# Changed exponentials with exprel for better accuracy when near division for 0
 eqs_IN = '''
-    dVi/dt = ((-( I_Li + I_Nai + I_Ki ) - I_AMPA_PI - I_GABA_II - I_C_HP_PI + Ii) / Ci) /ms  : 1 
+    dVi/dt = ((-( I_Li + I_Nai + I_Ki ) + Ii - I_GABA_II - I_AMPA_PI ) / Ci) /ms : 1 
+    # dVi/dt = ((-( I_Li + I_Nai + I_Ki ) + Ii) / Ci) /ms : 1 
     
 # Sodium Current
     mi = alphami / (alphami + betami)                                            : 1
@@ -170,15 +136,14 @@ eqs_IN = '''
     I_Ki = gKi*(ni**4)*(Vi-VKi)                                                  : 1
     
 # Leakage Current    
-    I_Li = gLi*(Vi-VLi)                                                          : 1
+    I_Li = gL*(Vi-VL)                                                            : 1
 
 #VARYING Network Parameters 
-    VLi                                                                          : 1
-    gLi                                                                          : 1
+    VL                                                                           : 1
+    gL                                                                           : 1
     Ii                                                                           : 1
     I_AMPA_PI                                                                    : 1
     I_GABA_II                                                                    : 1
-    I_C_HP_PI                                                                    : 1
 '''
 #-------------------------------------------------------------------------------
 
@@ -189,7 +154,6 @@ SynAMPA_PP = '''
     Isingle_AMPA_PP = gAMPA_PP * r_AMPAPP * (Vd - Erev_AMPA)                                     : 1 
     I_AMPA_PP_post = Isingle_AMPA_PP                                                             : 1 (summed) 
     gAMPA_PP                                                                                     : 1
-    Alpha_AMPA                                                                                   : 1
     lastupdate_AMPAPP                                                                            : second 
     '''
     
@@ -217,58 +181,28 @@ SynAMPA_PI = '''
     Isingle_AMPA_PI = gAMPA_PI * r_AMPAPI * (Vi - Erev_AMPA)                                     : 1 
     I_AMPA_PI_post = Isingle_AMPA_PI                                                             : 1 (summed)
     gAMPA_PI                                                                                     : 1
-    Alpha_AMPA                                                                                   : 1
     lastupdate_AMPAPI                                                                            : second  
     '''
-
-SynC_HP_PI = '''
-    dr_C_HPPI/dt = (Alpha_AMPA * C_C_HPPI * (1 - r_C_HPPI) - Beta_AMPA * r_C_HPPI) /ms           : 1 (clock-driven)
-    C_C_HPPI = int(timestep(t - lastupdate_C_HPPI, dt) <= timestep(Cdur_AMPA*ms, dt))* Cmax_AMPA : 1
-    Isingle_C_HP_PI = gAMPA_PI * r_C_HPPI * (Vi - Erev_AMPA)                                     : 1 
-    I_C_HP_PI_post = Isingle_C_HP_PI                                                             : 1 (summed)
-    gAMPA_PI                                                                                     : 1
-    Alpha_AMPA                                                                                   : 1
-    lastupdate_C_HPPI                                                                            : second  
-    '''
-    
-SynC_HP_PP = '''
-    dr_C_HPPP/dt = (Alpha_AMPA * C_C_HPPP * (1 - r_C_HPPP) - Beta_AMPA * r_C_HPPP) /ms           : 1 (clock-driven)
-    C_C_HPPP = int(timestep(t - lastupdate_C_HPPP, dt) <= timestep(Cdur_AMPA*ms, dt))* Cmax_AMPA : 1
-    Isingle_C_HP_PP = gAMPA_PP * r_C_HPPP * (Vd - Erev_AMPA)                                     : 1 
-    I_C_HP_PP_post = Isingle_C_HP_PP                                                             : 1 (summed)
-    gAMPA_PP                                                                                     : 1
-    Alpha_AMPA                                                                                   : 1
-    lastupdate_C_HPPP                                                                            : second  
-    '''
 #-------------------------------------------------------------------------------
-    
+
 # Equations for when there is a presinaptic spike-------------------------------
+
 GABA_IP_fire = '''
     lastupdate_GABAIP = int(timestep(t - lastupdate_GABAIP, dt) > timestep(Deadtime_GABA*ms, dt)) * t \
-    + int(timestep(t - lastupdate_GABAIP, dt) < timestep(Deadtime_GABA*ms, dt)) * lastupdate_GABAIP  
+    + int(timestep(t - lastupdate_GABAIP, dt) < timestep(Deadtime_GABA*ms, dt)) * lastupdate_GABAIP    
 '''
 
 GABA_II_fire = '''
     lastupdate_GABAII = int(timestep(t - lastupdate_GABAII, dt) > timestep(Deadtime_GABA*ms, dt)) * t \
-    + int(timestep(t - lastupdate_GABAII, dt) < timestep(Deadtime_GABA*ms, dt)) * lastupdate_GABAII    
+    + int(timestep(t - lastupdate_GABAII, dt) < timestep(Deadtime_GABA*ms, dt)) * lastupdate_GABAII  
 '''
 AMPA_PP_fire = '''
     lastupdate_AMPAPP = int(timestep(t - lastupdate_AMPAPP, dt) > timestep(Deadtime_AMPA*ms, dt)) * t \
-    + int(timestep(t - lastupdate_AMPAPP, dt) < timestep(Deadtime_AMPA*ms, dt)) * lastupdate_AMPAPP    
+    + int(timestep(t - lastupdate_AMPAPP, dt) < timestep(Deadtime_AMPA*ms, dt)) * lastupdate_AMPAPP  
 '''
 
 AMPA_PI_fire = '''
     lastupdate_AMPAPI = int(timestep(t - lastupdate_AMPAPI, dt) > timestep(Deadtime_AMPA*ms, dt)) * t \
     + int(timestep(t - lastupdate_AMPAPI, dt) < timestep(Deadtime_AMPA*ms, dt)) * lastupdate_AMPAPI  
-'''
-
-C_HP_PI_fire = '''
-    lastupdate_C_HPPI = int(timestep(t - lastupdate_C_HPPI, dt) > timestep(Deadtime_AMPA*ms, dt)) * t \
-    + int(timestep(t - lastupdate_C_HPPI, dt) < timestep(Deadtime_AMPA*ms, dt)) * lastupdate_C_HPPI  
-'''
-
-C_HP_PP_fire = '''
-    lastupdate_C_HPPP = int(timestep(t - lastupdate_C_HPPP, dt) > timestep(Deadtime_AMPA*ms, dt)) * t \
-    + int(timestep(t - lastupdate_C_HPPP, dt) < timestep(Deadtime_AMPA*ms, dt)) * lastupdate_C_HPPP  
 '''
 #-------------------------------------------------------------------------------
