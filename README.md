@@ -1,10 +1,7 @@
 # PFC-CA1-CA3Model_Taxidisetal
-Cortical-CA3-CA1 network model by [Taxidis et al].# Cortical-CA3-CA1 network model by Taxidis et al. (2013)
+Cortical-CA3-CA1 network model by [Taxidis et al]
 
 ## Introduction
-
-Cortical-CA3-CA1 network model by [Taxidis et al].
-
 During an Erasmus internship on which I based my Master thesis, I developed this model to fit the experimental data obtained by the University of Genoa. 
 
 ### File structure
